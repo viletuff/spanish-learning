@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, X, Key, Volume2, Download, Upload, Check } from 'lucide-react';
+import { Settings, X, Key, Volume2, Download, Upload, Check, Cloud, CloudCheck, RefreshCw } from 'lucide-react';
 import { speechService } from '../services/speech';
 import { storageService } from '../services/storage';
+import { syncManager, SyncStatus } from '../services/supabaseClient';
 import { useTranslation } from '../services/i18n';
 
 interface SettingsModalProps {
@@ -22,6 +23,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [selectedVoiceName, setSelectedVoiceName] = useState<string>('');
   const [playbackRate, setPlaybackRate] = useState<number>(0.88);
   const [isTestingVoice, setIsTestingVoice] = useState(false);
+  const [cloudStatus, setCloudStatus] = useState<SyncStatus>(() => syncManager.getStatus());
+  const [cloudMsg, setCloudMsg] = useState<string>('');
+
+  useEffect(() => {
+    return syncManager.subscribeStatus((st) => setCloudStatus(st));
+  }, []);
+
+  const handlePullCloud = async () => {
+    setCloudMsg('Pulling...');
+    const ok = await syncManager.pullAllFromCloud();
+    if (ok) {
+      setCloudMsg('Data pulled & synced!');
+      onDataRestored();
+    } else {
+      setCloudMsg('Could not pull from cloud.');
+    }
+    setTimeout(() => setCloudMsg(''), 3000);
+  };
+
+  const handlePushCloud = async () => {
+    setCloudMsg('Pushing...');
+    const ok = await syncManager.pushAllToCloud();
+    if (ok) {
+      setCloudMsg('All data pushed to cloud!');
+    } else {
+      setCloudMsg('Could not push to cloud.');
+    }
+    setTimeout(() => setCloudMsg(''), 3000);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -265,6 +295,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   className="hidden"
                 />
               </label>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 4: Supabase Cross-Device Sync */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Cloud className="w-4 h-4 text-emerald-600" />
+              <h4 className="font-semibold text-stone-900 text-sm">
+                Cross-Device Cloud Sync
+              </h4>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{cloudStatus === 'syncing' ? 'Syncing...' : 'Connected'}</span>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-50 border border-stone-200/80 space-y-3">
+            <p className="text-xs text-stone-600 leading-relaxed">
+              Your cards, reviews, diary entries, and conjugation progress automatically sync between your computer and iPhone using your private Supabase database.
+            </p>
+
+            {cloudMsg && (
+              <div className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center animate-fade-in">
+                {cloudMsg}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handlePullCloud}
+                className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-200 text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
+                <span>Pull from Cloud</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePushCloud}
+                className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-stone-100 text-stone-800 border border-stone-200 text-xs font-medium transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <CloudCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Push to Cloud</span>
+              </button>
             </div>
           </div>
         </div>

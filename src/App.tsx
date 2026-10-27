@@ -6,6 +6,7 @@ import { GrammarLab } from './components/GrammarLab';
 import { DiarySection } from './components/DiarySection';
 import { SettingsModal } from './components/SettingsModal';
 import { storageService } from './services/storage';
+import { syncManager } from './services/supabaseClient';
 import { I18nProvider, useTranslation } from './services/i18n';
 import { UserProgress } from './types';
 import { Sparkles, Heart } from 'lucide-react';
@@ -18,6 +19,25 @@ function AppContent() {
 
   useEffect(() => {
     setProgress(storageService.getProgress());
+
+    // 1. Pull latest cloud data from Supabase
+    syncManager.pullAllFromCloud().then((success) => {
+      if (success) {
+        setProgress(storageService.getProgress());
+      } else {
+        // If first time, push local data to cloud
+        syncManager.pushAllToCloud();
+      }
+    });
+
+    // 2. Listen for data updates synced from other devices
+    const unsubscribe = syncManager.subscribeData((key) => {
+      if (key === 'chispas_progress_v1') {
+        setProgress(storageService.getProgress());
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const refreshData = () => {

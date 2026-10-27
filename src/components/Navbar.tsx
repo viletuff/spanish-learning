@@ -1,7 +1,8 @@
-import React from 'react';
-import { Flame, Sparkles, Layers, GraduationCap, PenLine, Settings, Languages, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Flame, Sparkles, Layers, GraduationCap, PenLine, Settings, Languages, Zap, Cloud, CloudCheck, RefreshCw } from 'lucide-react';
 import { UserProgress } from '../types';
 import { useTranslation } from '../services/i18n';
+import { syncManager, SyncStatus } from '../services/supabaseClient';
 
 export type ActiveNavView = 'flashcards' | 'conjugations' | 'grammar' | 'diary';
 
@@ -19,6 +20,17 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSettings,
 }) => {
   const { lang, t, toggleLang } = useTranslation();
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(() => syncManager.getStatus());
+
+  useEffect(() => {
+    return syncManager.subscribeStatus((newStatus) => {
+      setSyncStatus(newStatus);
+    });
+  }, []);
+
+  const handleManualSync = async () => {
+    await syncManager.pullAllFromCloud();
+  };
 
   const navItems: Array<{ id: ActiveNavView; label: string; icon: React.ElementType }> = [
     { id: 'flashcards', label: t.nav.flashcardsTab, icon: Layers },
@@ -76,6 +88,31 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
+            {/* Cloud Sync Status Pill */}
+            <button
+              type="button"
+              onClick={handleManualSync}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold transition cursor-pointer shadow-2xs"
+              title={
+                syncStatus === 'syncing'
+                  ? 'Syncing with Supabase...'
+                  : syncStatus === 'synced'
+                  ? 'Synced with Supabase Cloud'
+                  : 'Click to sync with cloud'
+              }
+            >
+              {syncStatus === 'syncing' ? (
+                <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+              ) : syncStatus === 'synced' ? (
+                <CloudCheck className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Cloud className="w-3.5 h-3.5 text-stone-500" />
+              )}
+              <span className="hidden sm:inline text-[11px] font-medium text-stone-600">
+                {syncStatus === 'syncing' ? 'Syncing' : syncStatus === 'synced' ? 'Synced' : 'Sync'}
+              </span>
+            </button>
+
             {/* Language Toggle */}
             <button
               type="button"

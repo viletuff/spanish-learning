@@ -1,5 +1,6 @@
 import { STARTER_CURIOSITIES } from '../data/starterCuriosities';
 import { GeneratedStory, JournalEntry, MediaSnippet, SRSCard, UserProgress, VocabWord } from '../types';
+import { syncManager } from './supabaseClient';
 
 const STORAGE_KEYS = {
   VOCAB: 'chispas_vocab_v1',
@@ -46,6 +47,7 @@ export const storageService = {
 
   saveVocab(words: VocabWord[]): void {
     localStorage.setItem(STORAGE_KEYS.VOCAB, JSON.stringify(words));
+    syncManager.queueSave(STORAGE_KEYS.VOCAB, words);
   },
 
   addVocabWord(word: Omit<VocabWord, 'id' | 'dateAdded'>): VocabWord {
@@ -93,11 +95,13 @@ export const storageService = {
     const states = this.getWordReviewStates();
     states[rank] = state;
     localStorage.setItem('chispas_word_states_1000_v1', JSON.stringify(states));
+    syncManager.queueSave('chispas_word_states_1000_v1', states);
 
     const currentMastered = Object.keys(states)
       .filter((k) => states[Number(k)] === 'mastered')
       .map(Number);
     localStorage.setItem(STORAGE_KEYS.MASTERED_1000, JSON.stringify(currentMastered));
+    syncManager.queueSave(STORAGE_KEYS.MASTERED_1000, currentMastered);
   },
 
   getMasteredCommonWords(): number[] {
@@ -121,6 +125,7 @@ export const storageService = {
       isMastered = true;
     }
     localStorage.setItem(STORAGE_KEYS.MASTERED_1000, JSON.stringify(updated));
+    syncManager.queueSave(STORAGE_KEYS.MASTERED_1000, updated);
     return isMastered;
   },
 
@@ -138,6 +143,7 @@ export const storageService = {
     if (!current.includes(topicId)) {
       const updated = [...current, topicId];
       localStorage.setItem(STORAGE_KEYS.GRAMMAR_PROGRESS, JSON.stringify(updated));
+      syncManager.queueSave(STORAGE_KEYS.GRAMMAR_PROGRESS, updated);
       this.recordDailyActivity(10);
     }
   },
@@ -159,6 +165,7 @@ export const storageService = {
     };
     const updated = [newEntry, ...entries];
     localStorage.setItem(STORAGE_KEYS.JOURNAL, JSON.stringify(updated));
+    syncManager.queueSave(STORAGE_KEYS.JOURNAL, updated);
     this.recordDailyActivity(entry.timeSpentMinutes || 5);
     return newEntry;
   },
@@ -224,6 +231,7 @@ export const storageService = {
 
     progress.completedToday = true;
     localStorage.setItem(STORAGE_KEYS.PROGRESS, JSON.stringify(progress));
+    syncManager.queueSave(STORAGE_KEYS.PROGRESS, progress);
     return progress;
   },
 
@@ -282,7 +290,9 @@ export const storageService = {
 
   savePrefs(prefs: Partial<UserPrefs>): void {
     const current = this.getPrefs();
-    localStorage.setItem(STORAGE_KEYS.USER_PREFS, JSON.stringify({ ...current, ...prefs }));
+    const updated = { ...current, ...prefs };
+    localStorage.setItem(STORAGE_KEYS.USER_PREFS, JSON.stringify(updated));
+    syncManager.queueSave(STORAGE_KEYS.USER_PREFS, updated);
   },
 
   // --- SRS (Spaced Repetition System) Cards ---
@@ -297,6 +307,7 @@ export const storageService = {
 
   saveSRSCards(cards: SRSCard[]): void {
     localStorage.setItem(STORAGE_KEYS.SRS_CARDS, JSON.stringify(cards));
+    syncManager.queueSave(STORAGE_KEYS.SRS_CARDS, cards);
   },
 
   upsertSRSCard(card: SRSCard): void {
@@ -352,6 +363,7 @@ export const storageService = {
 
   setConjugationLevel(level: number): void {
     localStorage.setItem(STORAGE_KEYS.CONJUGATION_LEVEL, level.toString());
+    syncManager.queueSave(STORAGE_KEYS.CONJUGATION_LEVEL, level);
   },
 
   getCompletedConjugationTables(): string[] {
@@ -368,6 +380,7 @@ export const storageService = {
     if (!list.includes(tableKey)) {
       const updated = [...list, tableKey];
       localStorage.setItem(STORAGE_KEYS.COMPLETED_TABLES, JSON.stringify(updated));
+      syncManager.queueSave(STORAGE_KEYS.COMPLETED_TABLES, updated);
       this.recordDailyActivity(5);
     }
   },
