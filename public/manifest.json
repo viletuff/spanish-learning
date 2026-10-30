@@ -1,0 +1,26 @@
+{
+  "name": "Chispas · Tu Compañero Diario de Español",
+  "short_name": "Chispas",
+  "description": "Tu compañero de bolsillo para aprender español a diario con repetición espaciada y micro-diario.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#D97706",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
